@@ -12,7 +12,7 @@ public class Logger {
     }
 
     public void LIVE(String msg) {
-        this.log(Color.WHITE + msg + Color.RESET, LOGLEVEL.DEBUG);
+        this.log(Color.WHITE + msg + Color.RESET, LOGLEVEL.LIVE);
     }
 
     public void DEBUG(String msg) {
