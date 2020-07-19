@@ -11,6 +11,10 @@ public class Logger {
         this.logSystem = logSystem;
     }
 
+    public void LIVE(String msg) {
+        this.log(Color.WHITE + msg + Color.RESET, LOGLEVEL.DEBUG);
+    }
+
     public void DEBUG(String msg) {
         this.log(Color.PURPLE + msg + Color.RESET, LOGLEVEL.DEBUG);
     }
@@ -32,13 +36,17 @@ public class Logger {
         String logMSG = dateFormat.format(new Date().getTime()) + "[" + Thread.currentThread().getName() + "] " + msg;
         if (shouldLogged(loglevel)) {
             System.out.println(logMSG);
-            this.logSystem.writeToFile(logMSG);
+            if (loglevel != LOGLEVEL.LIVE) {
+                this.logSystem.writeToFile(logMSG);
+            }
         }
     }
 
 
     private boolean shouldLogged(LOGLEVEL loglevel) {
         if (this.logSystem.logLevel == LOGLEVEL.ALL) {
+            return true;
+        } else if (this.logSystem.logLevel == LOGLEVEL.LIVE) {
             return true;
         } else if (this.logSystem.logLevel == LOGLEVEL.DEBUG) {
             if (loglevel == LOGLEVEL.ALL) {

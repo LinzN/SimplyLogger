@@ -1,5 +1,5 @@
 package de.linzn.simplyLogger;
 
 public enum LOGLEVEL {
-    ALL, DEBUG, INFO, WARNING, ERROR
+    ALL, LIVE, DEBUG, INFO, WARNING, ERROR
 }
