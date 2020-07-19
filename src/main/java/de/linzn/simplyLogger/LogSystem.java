@@ -19,6 +19,7 @@ public class LogSystem {
     public LogSystem() {
         this.logLevel = LOGLEVEL.INFO;
         this.logDirectory = null;
+        this.logger = new Logger(this);
     }
 
     public Logger getLogger() {
