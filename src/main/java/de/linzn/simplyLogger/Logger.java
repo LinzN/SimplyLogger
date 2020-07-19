@@ -46,10 +46,10 @@ public class Logger {
     private boolean shouldLogged(LOGLEVEL loglevel) {
         if (this.logSystem.logLevel == LOGLEVEL.ALL) {
             return true;
-        } else if (this.logSystem.logLevel == LOGLEVEL.LIVE) {
-            return true;
-        } else if (this.logSystem.logLevel == LOGLEVEL.DEBUG) {
-            if (loglevel == LOGLEVEL.ALL) {
+         } else if (this.logSystem.logLevel == LOGLEVEL.DEBUG) {
+            if (loglevel == LOGLEVEL.LIVE) {
+                return true;
+            } else if (loglevel == LOGLEVEL.ALL) {
                 return false;
             } else if (loglevel == LOGLEVEL.DEBUG) {
                 return true;
@@ -61,7 +61,9 @@ public class Logger {
                 return true;
             }
         } else if (this.logSystem.logLevel == LOGLEVEL.INFO) {
-            if (loglevel == LOGLEVEL.ALL) {
+            if (loglevel == LOGLEVEL.LIVE) {
+                return true;
+            } else if (loglevel == LOGLEVEL.ALL) {
                 return false;
             } else if (loglevel == LOGLEVEL.DEBUG) {
                 return false;
@@ -73,7 +75,9 @@ public class Logger {
                 return true;
             }
         } else if (this.logSystem.logLevel == LOGLEVEL.WARNING) {
-            if (loglevel == LOGLEVEL.ALL) {
+            if (loglevel == LOGLEVEL.LIVE) {
+                return true;
+            } else if (loglevel == LOGLEVEL.ALL) {
                 return false;
             } else if (loglevel == LOGLEVEL.DEBUG) {
                 return false;
@@ -85,7 +89,9 @@ public class Logger {
                 return true;
             }
         } else if (this.logSystem.logLevel == LOGLEVEL.ERROR) {
-            if (loglevel == LOGLEVEL.ALL) {
+            if (loglevel == LOGLEVEL.LIVE) {
+                return true;
+            } else if (loglevel == LOGLEVEL.ALL) {
                 return false;
             } else if (loglevel == LOGLEVEL.DEBUG) {
                 return false;
