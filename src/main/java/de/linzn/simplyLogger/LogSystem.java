@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.logging.FileHandler;
 import java.util.logging.LogRecord;
 import java.util.logging.SimpleFormatter;
@@ -17,9 +18,13 @@ public class LogSystem {
     File logDirectory;
 
     public LogSystem() {
+        this(10000);
+    }
+
+    public LogSystem(int maxCacheLog) {
         this.logLevel = LOGLEVEL.INFO;
         this.logDirectory = null;
-        this.logger = new Logger(this);
+        this.logger = new Logger(this, maxCacheLog);
     }
 
     public Logger getLogger() {
@@ -28,6 +33,14 @@ public class LogSystem {
 
     public LOGLEVEL getLogLevel() {
         return logLevel;
+    }
+
+    public List<String> getLastEntries(int max) {
+        if(logger.logEntries.size() <= max){
+            return logger.logEntries;
+        } else {
+            return logger.logEntries.subList(logger.logEntries.size() - max, logger.logEntries.size());
+        }
     }
 
     public void setLogLevel(LOGLEVEL logLevel) {

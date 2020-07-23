@@ -2,31 +2,56 @@ package de.linzn.simplyLogger;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.LinkedList;
 
 public class Logger {
     private LogSystem logSystem;
+    private int maxCacheLog;
+
+    LinkedList<String> logEntries = new LinkedList<>();
 
 
-    Logger(LogSystem logSystem) {
+    Logger(LogSystem logSystem, int maxCacheLog) {
         this.logSystem = logSystem;
+        this.maxCacheLog = maxCacheLog;
     }
 
+    /**
+     * Live Logging for commands. Only shown on console
+     * @param msg Log entry
+     */
     public void LIVE(String msg) {
         this.log(Color.WHITE + msg + Color.RESET, LOGLEVEL.LIVE);
     }
 
+    /**
+     * Debug Logging. Show debug log entries
+     * @param msg Log entry
+     */
     public void DEBUG(String msg) {
         this.log(Color.PURPLE + msg + Color.RESET, LOGLEVEL.DEBUG);
     }
 
+    /**
+     * Info Logging. Show all default log entries
+     * @param msg Log entry
+     */
     public void INFO(String msg) {
         this.log(Color.WHITE + msg + Color.RESET, LOGLEVEL.INFO);
     }
 
+    /**
+     * Warning Logging. Show only errors and warning entries
+     * @param msg Log entry
+     */
     public void WARNING(String msg) {
         this.log(Color.YELLOW + msg + Color.RESET, LOGLEVEL.WARNING);
     }
 
+    /**
+     * Warning Logging. Show only error log entries
+     * @param msg Log entry
+     */
     public void ERROR(String msg) {
         this.log(Color.RED + msg + Color.RESET, LOGLEVEL.ERROR);
     }
@@ -38,15 +63,22 @@ public class Logger {
             System.out.println(logMSG);
             if (loglevel != LOGLEVEL.LIVE) {
                 this.logSystem.writeToFile(logMSG);
+                this.addToLogList(logMSG);
             }
         }
     }
 
+    private void addToLogList(String data) {
+        if (logEntries.size() >= maxCacheLog) {
+            logEntries.removeFirst();
+        }
+        logEntries.addLast(data);
+    }
 
     private boolean shouldLogged(LOGLEVEL loglevel) {
         if (this.logSystem.logLevel == LOGLEVEL.ALL) {
             return true;
-         } else if (this.logSystem.logLevel == LOGLEVEL.DEBUG) {
+        } else if (this.logSystem.logLevel == LOGLEVEL.DEBUG) {
             if (loglevel == LOGLEVEL.LIVE) {
                 return true;
             } else if (loglevel == LOGLEVEL.ALL) {
