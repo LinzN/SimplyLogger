@@ -78,6 +78,7 @@ public class Logger {
     private String replaceChars(String data){
         return data.replace("\u001B[37m", "")
                 .replace("\u001B[0m", "")
+                .replace("\u001B[32m", "")
                 .replace("\u001B[35m", "");
     }
 
