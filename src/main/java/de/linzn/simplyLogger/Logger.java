@@ -72,7 +72,13 @@ public class Logger {
         if (logEntries.size() >= maxCacheLog) {
             logEntries.removeFirst();
         }
-        logEntries.addLast(data);
+        logEntries.addLast(replaceChars(data));
+    }
+
+    private String replaceChars(String data){
+        return data.replace("\u001B[37m", "")
+                .replace("\u001B[0m", "")
+                .replace("\u001B[35m", "");
     }
 
     private boolean shouldLogged(LOGLEVEL loglevel) {
