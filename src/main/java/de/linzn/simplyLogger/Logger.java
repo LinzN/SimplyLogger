@@ -57,8 +57,8 @@ public class Logger {
     }
 
     private void log(String msg, LOGLEVEL loglevel) {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
-        String logMSG = dateFormat.format(new Date().getTime()) + "[" + Thread.currentThread().getName() + "] " + msg;
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
+        String logMSG = "["+dateFormat.format(new Date().getTime())+  "] [" + Thread.currentThread().getName() + "] " + msg;
         if (shouldLogged(loglevel)) {
             System.out.println(logMSG);
             if (loglevel != LOGLEVEL.LIVE) {
