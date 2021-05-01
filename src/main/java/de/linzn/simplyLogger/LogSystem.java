@@ -35,14 +35,6 @@ public class LogSystem {
         return logLevel;
     }
 
-    public List<String> getLastEntries(int max) {
-        if(logger.logEntries.size() <= max){
-            return logger.logEntries;
-        } else {
-            return logger.logEntries.subList(logger.logEntries.size() - max, logger.logEntries.size());
-        }
-    }
-
     public void setLogLevel(LOGLEVEL logLevel) {
         this.logLevel = logLevel;
     }

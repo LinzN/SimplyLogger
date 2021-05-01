@@ -3,6 +3,7 @@ package de.linzn.simplyLogger;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
+import java.util.List;
 
 public class Logger {
     private LogSystem logSystem;
@@ -143,6 +144,14 @@ public class Logger {
             }
         }
         return false;
+    }
+
+    public List<String> getLastEntries(int max) {
+        if(logEntries.size() <= max){
+            return logEntries;
+        } else {
+            return logEntries.subList(logEntries.size() - max, logEntries.size());
+        }
     }
 
 }
