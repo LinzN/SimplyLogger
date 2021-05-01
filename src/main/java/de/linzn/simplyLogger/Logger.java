@@ -21,7 +21,7 @@ public class Logger {
      * Live Logging for commands. Only shown on console
      * @param msg Log entry
      */
-    public void LIVE(String msg) {
+    public void LIVE(Object msg) {
         this.log(Color.WHITE + msg + Color.RESET, LOGLEVEL.LIVE);
     }
 
@@ -29,7 +29,7 @@ public class Logger {
      * Debug Logging. Show debug log entries
      * @param msg Log entry
      */
-    public void DEBUG(String msg) {
+    public void DEBUG(Object msg) {
         this.log(Color.PURPLE + msg + Color.RESET, LOGLEVEL.DEBUG);
     }
 
@@ -37,7 +37,7 @@ public class Logger {
      * Info Logging. Show all default log entries
      * @param msg Log entry
      */
-    public void INFO(String msg) {
+    public void INFO(Object msg) {
         this.log(Color.WHITE + msg + Color.RESET, LOGLEVEL.INFO);
     }
 
@@ -45,7 +45,7 @@ public class Logger {
      * Warning Logging. Show only errors and warning entries
      * @param msg Log entry
      */
-    public void WARNING(String msg) {
+    public void WARNING(Object msg) {
         this.log(Color.YELLOW + msg + Color.RESET, LOGLEVEL.WARNING);
     }
 
@@ -53,7 +53,7 @@ public class Logger {
      * Warning Logging. Show only error log entries
      * @param msg Log entry
      */
-    public void ERROR(String msg) {
+    public void ERROR(Object msg) {
         this.log(Color.RED + msg + Color.RESET, LOGLEVEL.ERROR);
     }
 
