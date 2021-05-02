@@ -22,7 +22,7 @@ public class Logger {
      * @param msg Log entry
      */
     public void LIVE(Object msg) {
-        this.log(Color.WHITE + msg + Color.RESET, LOGLEVEL.LIVE);
+        this.log(Color.WHITE + msg + Color.RESET, LOGLEVEL.LIVE, msg.toString());
     }
 
     /**
@@ -30,7 +30,7 @@ public class Logger {
      * @param msg Log entry
      */
     public void DEBUG(Object msg) {
-        this.log(Color.PURPLE + msg + Color.RESET, LOGLEVEL.DEBUG);
+        this.log(Color.PURPLE + msg + Color.RESET, LOGLEVEL.DEBUG, msg.toString());
     }
 
     /**
@@ -38,7 +38,7 @@ public class Logger {
      * @param msg Log entry
      */
     public void INFO(Object msg) {
-        this.log(Color.WHITE + msg + Color.RESET, LOGLEVEL.INFO);
+        this.log(Color.WHITE + msg + Color.RESET, LOGLEVEL.INFO, msg.toString());
     }
 
     /**
@@ -46,7 +46,7 @@ public class Logger {
      * @param msg Log entry
      */
     public void WARNING(Object msg) {
-        this.log(Color.YELLOW + msg + Color.RESET, LOGLEVEL.WARNING);
+        this.log(Color.YELLOW + msg + Color.RESET, LOGLEVEL.WARNING, msg.toString());
     }
 
     /**
@@ -54,17 +54,18 @@ public class Logger {
      * @param msg Log entry
      */
     public void ERROR(Object msg) {
-        this.log(Color.RED + msg + Color.RESET, LOGLEVEL.ERROR);
+        this.log(Color.RED + msg + Color.RESET, LOGLEVEL.ERROR, msg.toString());
     }
 
-    private void log(String msg, LOGLEVEL loglevel) {
+    private void log(String msg, LOGLEVEL loglevel, String raw) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
-        String logMSG = "["+dateFormat.format(new Date().getTime())+  "] [" + Thread.currentThread().getName() + "] " + msg;
+        String logPrefix = "["+dateFormat.format(new Date().getTime())+  "] [" + Thread.currentThread().getName() + "] ";
         if (shouldLogged(loglevel)) {
-            System.out.println(logMSG);
+            System.out.println(logPrefix + msg);
             if (loglevel != LOGLEVEL.LIVE) {
-                this.logSystem.writeToFile(logMSG);
-                this.addToLogList(logMSG);
+                String logPrefixRaw = "[" + Thread.currentThread().getName() + "] ";
+                this.logSystem.writeToFile(logPrefixRaw + raw);
+                this.addToLogList(logPrefix + raw);
             }
         }
     }
