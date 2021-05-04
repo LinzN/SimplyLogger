@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.logging.FileHandler;
 import java.util.logging.LogRecord;
 import java.util.logging.SimpleFormatter;
