@@ -4,81 +4,87 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.logging.FileHandler;
-import java.util.logging.LogRecord;
-import java.util.logging.SimpleFormatter;
+import java.util.logging.*;
 
 public class LogSystem {
 
     private Logger logger;
+    private FileHandler fileHandler;
+    private ConsoleHandler consoleHandler;
 
-    java.util.logging.Logger fileLogger;
-    LOGLEVEL logLevel;
+
+    java.util.logging.Logger sysLogger;
     File logDirectory;
 
-    public LogSystem() {
-        this(10000);
+    public LogSystem(String appName) {
+        this(10000, appName);
     }
 
-    public LogSystem(int maxCacheLog) {
-        this.logLevel = LOGLEVEL.INFO;
+    public LogSystem(int maxCacheLog, String appName) {
         this.logDirectory = null;
         this.logger = new Logger(this, maxCacheLog);
+        this.setupSysLogger(appName);
     }
 
     public Logger getLogger() {
         return logger;
     }
 
-    public LOGLEVEL getLogLevel() {
-        return logLevel;
+    public Level getLogLevel() {
+        return sysLogger.getLevel();
     }
 
-    public void setLogLevel(LOGLEVEL logLevel) {
-        this.logLevel = logLevel;
+    public void setLogLevel(Level level) {
+        this.sysLogger.setLevel(level);
+        this.consoleHandler.setLevel(level);
     }
 
-    public void setFileLogger(String appName, File logDirectory) {
+    public void setFileLogger(File logDirectory) {
         this.logDirectory = logDirectory;
-        this.setupFileLogger(appName);
+        this.setupSysFileLogger();
     }
 
-    void writeToFile(String msg){
-        if(this.fileLogger != null){
-            this.fileLogger.info( msg);
+    void logToSysLogger(Level level, String msg) {
+        if (this.sysLogger != null) {
+            this.sysLogger.log(level, msg);
         }
     }
 
-    private void setupFileLogger(String appName) {
-        fileLogger = java.util.logging.Logger.getLogger(appName);
-        fileLogger.setUseParentHandlers(false);
-        FileHandler fh;
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy-HH.mm.ss");
+    private void setupSysLogger(String appName) {
+        sysLogger = java.util.logging.Logger.getLogger(appName);
+        sysLogger.setUseParentHandlers(false);
+        consoleHandler = new ConsoleHandler();
+        consoleHandler.setFormatter(formatter);
+        sysLogger.addHandler(consoleHandler);
+    }
+
+
+    private void setupSysFileLogger() {
 
         try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy-HH.mm.ss");
             if (!logDirectory.exists()) {
                 logDirectory.mkdir();
             }
 
-            fh = new FileHandler(logDirectory.getName() + "/" + dateFormat.format(new Date().getTime()) + ".log");
-            fileLogger.addHandler(fh);
-
-            SimpleFormatter formatter = new SimpleFormatter() {
-                private static final String format = "[%1$tF %1$tT] [%2$-7s] %3$s %n";
-
-                @Override
-                public synchronized String format(LogRecord lr) {
-                    return String.format(format,
-                            new Date(lr.getMillis()),
-                            lr.getLevel().getLocalizedName(),
-                            lr.getMessage()
-                    );
-                }
-            };
-
-            fh.setFormatter(formatter);
+            fileHandler = new FileHandler(logDirectory.getName() + "/" + dateFormat.format(new Date().getTime()) + ".log");
+            fileHandler.setFormatter(formatter);
+            sysLogger.addHandler(fileHandler);
         } catch (SecurityException | IOException e) {
-            e.printStackTrace();
+            this.logger.ERROR(e);
         }
     }
+
+    public SimpleFormatter formatter = new SimpleFormatter() {
+        private static final String format = "[%1$tF %1$tT] [%2$-7s] %3$s %n";
+
+        @Override
+        public synchronized String format(LogRecord lr) {
+            return String.format(format,
+                    new Date(lr.getMillis()),
+                    lr.getLevel().getLocalizedName(),
+                    lr.getMessage()
+            );
+        }
+    };
 }
