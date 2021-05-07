@@ -19,6 +19,16 @@ public class Logger {
     }
 
     /**
+     * CONFIG Logging for config settings.
+     *
+     * @param msg Log entry
+     */
+    public synchronized void CONFIG(Object msg) {
+        String formatted = formattingLogInput(msg);
+        this.log(formatted, Level.CONFIG, formatted);
+    }
+
+    /**
      * Live Logging for commands. Only shown on console
      *
      * @param msg Log entry
@@ -35,7 +45,7 @@ public class Logger {
      */
     public synchronized void DEBUG(Object msg) {
         String formatted = formattingLogInput(msg);
-        this.log(Color.PURPLE + formatted + Color.RESET, Level.FINER, formatted);
+        this.log(Color.PURPLE + formatted + Color.RESET, CustomLevel.DEBUG, formatted);
     }
 
     /**
@@ -101,7 +111,7 @@ public class Logger {
     }
 
     private void addToLogList(Level level, String data) {
-        if(this.logSystem.sysLogger.isLoggable(level)) {
+        if (this.logSystem.sysLogger.isLoggable(level)) {
             if (logEntries.size() >= maxCacheLog) {
                 logEntries.removeFirst();
             }
@@ -121,6 +131,14 @@ public class Logger {
             return logEntries;
         } else {
             return logEntries.subList(logEntries.size() - max, logEntries.size());
+        }
+    }
+
+    private static class CustomLevel extends Level {
+        public static final Level DEBUG = new CustomLevel("DEBUG", 350);
+
+        public CustomLevel(String name, int value) {
+            super(name, value);
         }
     }
 
