@@ -4,17 +4,16 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Optional;
 import java.util.logging.*;
 
 public class LogSystem {
 
-    private Logger logger;
-    private FileHandler fileHandler;
-    private ConsoleHandler consoleHandler;
-
-
     java.util.logging.Logger sysLogger;
     File logDirectory;
+    private final Logger logger;
+    private FileHandler fileHandler;
+    private ConsoleHandler consoleHandler;
 
     public LogSystem(String appName) {
         this(10000, appName);
@@ -53,11 +52,10 @@ public class LogSystem {
     private void setupSysLogger(String appName) {
         sysLogger = java.util.logging.Logger.getLogger(appName);
         sysLogger.setUseParentHandlers(false);
-        consoleHandler = new ConsoleHandler();
+        consoleHandler = new CustomConsoleHandler(this);
         consoleHandler.setFormatter(formatter);
         sysLogger.addHandler(consoleHandler);
     }
-
 
     private void setupSysFileLogger() {
 
@@ -76,15 +74,27 @@ public class LogSystem {
     }
 
     public SimpleFormatter formatter = new SimpleFormatter() {
-        private static final String format = "[%1$tF %1$tT] [%2$-7s] %3$s %n";
+        private static final String format = "[%1$tF %1$tT] [%2$-7s] [%3$s] %4$s %n";
 
         @Override
         public synchronized String format(LogRecord lr) {
             return String.format(format,
                     new Date(lr.getMillis()),
                     lr.getLevel().getLocalizedName(),
+                    getThreadName(lr.getThreadID()),
                     lr.getMessage()
             );
+        }
+
+        String getThreadName(long threadId) {
+            Optional<Thread> thread = Thread.getAllStackTraces().keySet().stream()
+                    .filter(t -> t.getId() == threadId)
+                    .findFirst();
+            if (thread.isPresent()) {
+                return thread.get().getName();
+            } else {
+                return "UNKNOWN";
+            }
         }
     };
 }

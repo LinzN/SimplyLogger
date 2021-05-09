@@ -1,21 +1,29 @@
 package de.linzn.simplyLogger;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
 public class Logger {
-    private LogSystem logSystem;
-    private int maxCacheLog;
-
-    LinkedList<String> logEntries = new LinkedList<>();
+    LinkedList<LogRecord> logEntries = new LinkedList<>();
+    private final LogSystem logSystem;
+    private final int maxCacheLog;
 
 
     Logger(LogSystem logSystem, int maxCacheLog) {
         this.logSystem = logSystem;
         this.maxCacheLog = maxCacheLog;
+    }
+
+    private static String getStackTrace(Exception ex) {
+        StringBuffer sb = new StringBuffer(500);
+        StackTraceElement[] st = ex.getStackTrace();
+        sb.append(ex.getClass().getName() + ": " + ex.getMessage() + "\n");
+        for (int i = 0; i < st.length; i++) {
+            sb.append("\t at " + st[i].toString() + "\n");
+        }
+        return sb.toString();
     }
 
     /**
@@ -24,8 +32,7 @@ public class Logger {
      * @param msg Log entry
      */
     public synchronized void CONFIG(Object msg) {
-        String formatted = formattingLogInput(msg);
-        this.log(formatted, Level.CONFIG, formatted);
+        this.log(formattingLogInput(msg), Level.CONFIG);
     }
 
     /**
@@ -34,8 +41,7 @@ public class Logger {
      * @param msg Log entry
      */
     public synchronized void LIVE(Object msg) {
-        String formatted = formattingLogInput(msg);
-        this.log(Color.WHITE + formatted + Color.RESET, Level.INFO, formatted);
+        this.log(formattingLogInput(msg), Level.INFO);
     }
 
     /**
@@ -44,8 +50,7 @@ public class Logger {
      * @param msg Log entry
      */
     public synchronized void DEBUG(Object msg) {
-        String formatted = formattingLogInput(msg);
-        this.log(Color.PURPLE + formatted + Color.RESET, CustomLevel.DEBUG, formatted);
+        this.log(formattingLogInput(msg), CustomLevel.DEBUG);
     }
 
     /**
@@ -54,8 +59,7 @@ public class Logger {
      * @param msg Log entry
      */
     public synchronized void INFO(Object msg) {
-        String formatted = formattingLogInput(msg);
-        this.log(Color.WHITE + formatted + Color.RESET, Level.INFO, formatted);
+        this.log(formattingLogInput(msg),  Level.INFO);
     }
 
     /**
@@ -64,8 +68,7 @@ public class Logger {
      * @param msg Log entry
      */
     public synchronized void WARNING(Object msg) {
-        String formatted = formattingLogInput(msg);
-        this.log(Color.YELLOW + formatted + Color.RESET, Level.WARNING, formatted);
+        this.log(formattingLogInput(msg),  Level.WARNING);
     }
 
     /**
@@ -74,10 +77,8 @@ public class Logger {
      * @param msg Log entry
      */
     public synchronized void ERROR(Object msg) {
-        String formatted = formattingLogInput(msg);
-        this.log(Color.RED + formatted + Color.RESET, Level.SEVERE, formatted);
+        this.log(formattingLogInput(msg),  Level.SEVERE);
     }
-
 
     private String formattingLogInput(Object input) {
         String output;
@@ -92,48 +93,54 @@ public class Logger {
         return output;
     }
 
-    private static String getStackTrace(Exception ex) {
-        StringBuffer sb = new StringBuffer(500);
-        StackTraceElement[] st = ex.getStackTrace();
-        sb.append(ex.getClass().getName() + ": " + ex.getMessage() + "\n");
-        for (int i = 0; i < st.length; i++) {
-            sb.append("\t at " + st[i].toString() + "\n");
+    private void log(String msg, Level level) {
+        this.logSystem.logToSysLogger(level, msg);
+    }
+
+    void addToLogList(LogRecord logRecord) {
+        if (logEntries.size() >= maxCacheLog) {
+            logEntries.removeFirst();
         }
-        return sb.toString();
+        logEntries.addLast(logRecord);
     }
 
-    private void log(String colored, Level level, String raw) {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
-        String rawPrefix = "[" + dateFormat.format(new Date().getTime()) + "] [" + Thread.currentThread().getName() + "] ";
-        String coloredPrefix = "[" + Thread.currentThread().getName() + "] ";
-        this.logSystem.logToSysLogger(level, coloredPrefix + colored);
-        this.addToLogList(level, rawPrefix + raw);
-    }
-
-    private void addToLogList(Level level, String data) {
-        if (this.logSystem.sysLogger.isLoggable(level)) {
-            if (logEntries.size() >= maxCacheLog) {
-                logEntries.removeFirst();
-            }
-            logEntries.addLast(replaceChars(data));
-        }
-    }
-
-    private String replaceChars(String data) {
-        return data.replace("\u001B[37m", "")
-                .replace("\u001B[0m", "")
-                .replace("\u001B[32m", "")
-                .replace("\u001B[35m", "");
-    }
-
+    /**
+     * Get a String list with the last x log entries
+     *
+     * @param max Amount of logentries to collect
+     * @return String list with log entries
+     */
     public List<String> getLastEntries(int max) {
-        if (logEntries.size() <= max) {
-            return logEntries;
-        } else {
-            return logEntries.subList(logEntries.size() - max, logEntries.size());
+        List<LogRecord> clonedRecords = splitLogList(max);
+
+        List<String> stringList = new LinkedList<>();
+
+        for (LogRecord logRecord : clonedRecords) {
+
+            stringList.add(this.logSystem.formatter.format(logRecord));
         }
+        return stringList;
     }
 
+    /**
+     * Split the current log entry list to a smaller one
+     *
+     * @param max max size of requested logentries
+     * @return LinkedList of requested logentries
+     */
+    private List<LogRecord> splitLogList(int max) {
+        List<LogRecord> clonedRecords;
+        if (logEntries.size() <= max) {
+            clonedRecords = new LinkedList<>(logEntries);
+        } else {
+            clonedRecords = logEntries.subList(logEntries.size() - max, logEntries.size());
+        }
+        return clonedRecords;
+    }
+
+    /**
+     * Own custom log level for debugging
+     */
     private static class CustomLevel extends Level {
         public static final Level DEBUG = new CustomLevel("DEBUG", 350);
 
@@ -141,5 +148,4 @@ public class Logger {
             super(name, value);
         }
     }
-
 }
