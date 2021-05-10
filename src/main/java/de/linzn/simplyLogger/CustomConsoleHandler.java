@@ -7,8 +7,8 @@ class CustomConsoleHandler extends ConsoleHandler {
 
     private LogSystem logSystem;
 
-    public CustomConsoleHandler(LogSystem logSystem){
-    this.logSystem = logSystem;
+    public CustomConsoleHandler(LogSystem logSystem) {
+        this.logSystem = logSystem;
     }
 
     @Override

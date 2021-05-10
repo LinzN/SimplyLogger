@@ -6,9 +6,9 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 public class Logger {
-    LinkedList<LogRecord> logEntries = new LinkedList<>();
     private final LogSystem logSystem;
     private final int maxCacheLog;
+    private final LinkedList<LogRecord> logEntries = new LinkedList<>();
 
 
     Logger(LogSystem logSystem, int maxCacheLog) {
@@ -59,7 +59,7 @@ public class Logger {
      * @param msg Log entry
      */
     public synchronized void INFO(Object msg) {
-        this.log(formattingLogInput(msg),  Level.INFO);
+        this.log(formattingLogInput(msg), Level.INFO);
     }
 
     /**
@@ -68,7 +68,7 @@ public class Logger {
      * @param msg Log entry
      */
     public synchronized void WARNING(Object msg) {
-        this.log(formattingLogInput(msg),  Level.WARNING);
+        this.log(formattingLogInput(msg), Level.WARNING);
     }
 
     /**
@@ -77,7 +77,7 @@ public class Logger {
      * @param msg Log entry
      */
     public synchronized void ERROR(Object msg) {
-        this.log(formattingLogInput(msg),  Level.SEVERE);
+        this.log(formattingLogInput(msg), Level.SEVERE);
     }
 
     private String formattingLogInput(Object input) {

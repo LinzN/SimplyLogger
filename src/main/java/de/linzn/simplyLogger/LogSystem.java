@@ -1,5 +1,8 @@
 package de.linzn.simplyLogger;
 
+
+import de.linzn.simplyLogger.input.InputHandler;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -9,19 +12,33 @@ import java.util.logging.*;
 
 public class LogSystem {
 
-    java.util.logging.Logger sysLogger;
-    File logDirectory;
-    private final Logger logger;
-    private FileHandler fileHandler;
-    private ConsoleHandler consoleHandler;
     final DefaultFormatter defaultFormatter;
     final ColorFormatter colorFormatter;
     final HtmlFormatter htmlFormatter;
+    private final Logger logger;
+    java.util.logging.Logger sysLogger;
+    File logDirectory;
+    private InputManager inputManager;
+    private FileHandler fileHandler;
+    private ConsoleHandler consoleHandler;
 
+    /**
+     * Constructor for creating the Log system
+     * Create a Logger for system logging
+     *
+     * @param appName Logger name
+     */
     public LogSystem(String appName) {
         this(10000, appName);
     }
 
+    /**
+     * Constructor for creating the Log system
+     * Create a Logger for system logging
+     *
+     * @param appName     Logger name
+     * @param maxCacheLog max size of cached log entries
+     */
     public LogSystem(int maxCacheLog, String appName) {
         this.defaultFormatter = new DefaultFormatter();
         this.colorFormatter = new ColorFormatter();
@@ -31,24 +48,77 @@ public class LogSystem {
         this.setupSysLogger(appName);
     }
 
+    /**
+     * Get the current logger instance
+     *
+     * @return Current logger instance
+     */
     public Logger getLogger() {
         return logger;
     }
 
+    /**
+     * Gets the current log level
+     *
+     * @return Current log level
+     */
     public Level getLogLevel() {
         return sysLogger.getLevel();
     }
 
+    /**
+     * Set the log level for logging
+     *
+     * @param level Log level to set
+     */
     public void setLogLevel(Level level) {
         this.sysLogger.setLevel(level);
         this.consoleHandler.setLevel(level);
     }
 
+    /**
+     * Enable file logging
+     *
+     * @param logDirectory directory to create logfiles
+     */
     public void setFileLogger(File logDirectory) {
         this.logDirectory = logDirectory;
         this.setupSysFileLogger();
     }
 
+    /**
+     * Register a console input handler for console input
+     *
+     * @param inputHandler InputHandler implementation for console input
+     */
+    public void registerInputHandler(InputHandler inputHandler) {
+        if (this.inputManager == null) {
+            this.logger.INFO("Register a new input manager!");
+            this.inputManager = new InputManager(inputHandler, this);
+        } else {
+            this.logger.ERROR("There is already an input manager registered!");
+        }
+    }
+
+    /**
+     * Unregister and disable console inputs
+     */
+    public void unregisterInputHandler() {
+        if (this.inputManager != null) {
+            this.logger.INFO("Unregister input manager!");
+            this.inputManager.stopThread();
+            this.inputManager = null;
+        } else {
+            this.logger.ERROR("There is no input manager to unregister!");
+        }
+    }
+
+    /**
+     * Log something to sys logger
+     *
+     * @param level Level of logging
+     * @param msg   Content of logging
+     */
     void logToSysLogger(Level level, String msg) {
         if (this.sysLogger != null) {
             this.sysLogger.log(level, msg);
