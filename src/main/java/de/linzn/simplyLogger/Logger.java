@@ -116,8 +116,7 @@ public class Logger {
         List<String> stringList = new LinkedList<>();
 
         for (LogRecord logRecord : clonedRecords) {
-
-            stringList.add(this.logSystem.formatter.format(logRecord));
+            stringList.add(this.logSystem.defaultFormatter.format(logRecord));
         }
         return stringList;
     }
@@ -141,7 +140,7 @@ public class Logger {
     /**
      * Own custom log level for debugging
      */
-    private static class CustomLevel extends Level {
+    static class CustomLevel extends Level {
         public static final Level DEBUG = new CustomLevel("DEBUG", 350);
 
         public CustomLevel(String name, int value) {
