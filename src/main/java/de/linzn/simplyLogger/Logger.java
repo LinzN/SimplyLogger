@@ -119,15 +119,8 @@ public class Logger {
      * @param max Amount of logentries to collect
      * @return String list with log entries
      */
-    public List<String> getLastEntries(int max) {
-        List<LogRecord> clonedRecords = splitLogList(max);
-
-        List<String> stringList = new LinkedList<>();
-
-        for (LogRecord logRecord : clonedRecords) {
-            stringList.add(this.logSystem.defaultFormatter.format(logRecord));
-        }
-        return stringList;
+    public List<LogRecord> getLastEntries(int max) {
+        return splitLogList(max);
     }
 
     /**

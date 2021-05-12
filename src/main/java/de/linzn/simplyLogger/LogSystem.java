@@ -14,7 +14,7 @@ public class LogSystem {
 
     final DefaultFormatter defaultFormatter;
     final ColorFormatter colorFormatter;
-    final HtmlFormatter htmlFormatter;
+    public final HtmlFormatter htmlFormatter;
     private final Logger logger;
     java.util.logging.Logger sysLogger;
     File logDirectory;
@@ -213,7 +213,7 @@ public class LogSystem {
         }
     }
 
-    static class HtmlFormatter extends DefaultFormatter {
+    public static class HtmlFormatter extends DefaultFormatter {
 
         @Override
         public synchronized String format(LogRecord lr) {
@@ -235,7 +235,7 @@ public class LogSystem {
             } else {
                 htmlColor = "style=\"color:green\">";
             }
-            return "<td " + htmlColor + uncolored + "</td>\n";
+            return "<div " + htmlColor + uncolored.replace("\n", "<br>") + "</div>\n";
         }
     }
 
