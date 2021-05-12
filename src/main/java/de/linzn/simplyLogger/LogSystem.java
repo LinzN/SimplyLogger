@@ -180,6 +180,7 @@ public class LogSystem {
         public static final String ANSI_RESET = "\u001B[0m";
         public static final String ANSI_BLACK = "\u001B[30m";
         public static final String ANSI_RED = "\u001B[31m";
+        public static final String ANSI_RED_BG = "\u001B[41m";
         public static final String ANSI_GREEN = "\u001B[32m";
         public static final String ANSI_YELLOW = "\u001B[33m";
         public static final String ANSI_BLUE = "\u001B[34m";
@@ -203,6 +204,8 @@ public class LogSystem {
                 color = ANSI_CYAN;
             } else if (lr.getLevel() == Logger.CustomLevel.DEBUG) {
                 color = ANSI_PURPLE;
+            } else if (lr.getLevel() == Logger.CustomLevel.CORE) {
+                color = ANSI_RED_BG;
             } else {
                 color = ANSI_GREEN;
             }
@@ -227,6 +230,8 @@ public class LogSystem {
                 htmlColor = "style=\"color:cyan\">";
             } else if (lr.getLevel() == Logger.CustomLevel.DEBUG) {
                 htmlColor = "style=\"color:purple\">";
+            } else if (lr.getLevel() == Logger.CustomLevel.CORE) {
+                htmlColor = "style=\"color:red\">";
             } else {
                 htmlColor = "style=\"color:green\">";
             }

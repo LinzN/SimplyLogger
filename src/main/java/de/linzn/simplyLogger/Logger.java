@@ -36,7 +36,7 @@ public class Logger {
     }
 
     /**
-     * Live Logging for commands. Only shown on console
+     * Live Logging for commands. Log in live level
      *
      * @param msg Log entry
      */
@@ -45,7 +45,7 @@ public class Logger {
     }
 
     /**
-     * Debug Logging. Show debug log entries
+     * Debug Logging. Log in debug level
      *
      * @param msg Log entry
      */
@@ -54,7 +54,7 @@ public class Logger {
     }
 
     /**
-     * Info Logging. Show all default log entries
+     * Info Logging. Log in info level
      *
      * @param msg Log entry
      */
@@ -63,7 +63,7 @@ public class Logger {
     }
 
     /**
-     * Warning Logging. Show only errors and warning entries
+     * Warning Logging. Log in warning level
      *
      * @param msg Log entry
      */
@@ -72,12 +72,21 @@ public class Logger {
     }
 
     /**
-     * Warning Logging. Show only error log entries
+     * Error Logging. Log in error level
      *
      * @param msg Log entry
      */
     public synchronized void ERROR(Object msg) {
         this.log(formattingLogInput(msg), Level.SEVERE);
+    }
+
+    /**
+     * Core Logging. Log in core level
+     *
+     * @param msg Log entry
+     */
+    public synchronized void CORE(Object msg) {
+        this.log(formattingLogInput(msg), CustomLevel.CORE);
     }
 
     private String formattingLogInput(Object input) {
@@ -141,6 +150,7 @@ public class Logger {
      * Own custom log level for debugging
      */
     static class CustomLevel extends Level {
+        public static final Level CORE = new CustomLevel("CORE", 1100);
         public static final Level DEBUG = new CustomLevel("DEBUG", 350);
 
         public CustomLevel(String name, int value) {
