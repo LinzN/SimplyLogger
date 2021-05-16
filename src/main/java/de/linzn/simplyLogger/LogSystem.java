@@ -231,7 +231,7 @@ public class LogSystem {
             } else if (lr.getLevel() == Logger.CustomLevel.DEBUG) {
                 htmlColor = "style=\"color:purple\">";
             } else if (lr.getLevel() == Logger.CustomLevel.CORE) {
-                htmlColor = "style=\"color:red\">";
+                htmlColor = "style=\"background-color:red\">";
             } else {
                 htmlColor = "style=\"color:green\">";
             }
