@@ -90,6 +90,15 @@ public class Logger {
         this.log(formattingLogInput(msg), CustomLevel.CORE);
     }
 
+    /**
+     * Super Logging. Log in super level
+     *
+     * @param msg Log entry
+     */
+    public synchronized void SUPER(Object msg) {
+        this.log(formattingLogInput(msg), CustomLevel.SUPER);
+    }
+
     private Object formattingLogInput(Object input) {
         Object output;
 
@@ -157,6 +166,7 @@ public class Logger {
      */
     static class CustomLevel extends Level {
         public static final Level CORE = new CustomLevel("CORE", 1100);
+        public static final Level SUPER = new CustomLevel("SUPER", 1110);
         public static final Level DEBUG = new CustomLevel("DEBUG", 350);
 
         public CustomLevel(String name, int value) {
