@@ -1,5 +1,6 @@
 package de.linzn.simplyLogger;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -16,14 +17,14 @@ public class Logger {
         this.maxCacheLog = maxCacheLog;
     }
 
-    private static String getStackTrace(Exception ex) {
-        StringBuffer sb = new StringBuffer(500);
+    private static List<String> getStackTrace(Exception ex) {
+        List<String> exceptionList = new ArrayList<>();
         StackTraceElement[] st = ex.getStackTrace();
-        sb.append(ex.getClass().getName() + ": " + ex.getMessage() + "\n");
+        exceptionList.add("Stacktrace:::" + ex.getClass().getName() + ": " + ex.getMessage() + "");
         for (int i = 0; i < st.length; i++) {
-            sb.append("\t at " + st[i].toString() + "\n");
+            exceptionList.add("\t at " + st[i].toString() + "");
         }
-        return sb.toString();
+        return exceptionList;
     }
 
     /**
@@ -89,21 +90,33 @@ public class Logger {
         this.log(formattingLogInput(msg), CustomLevel.CORE);
     }
 
-    private String formattingLogInput(Object input) {
-        String output;
+    private Object formattingLogInput(Object input) {
+        Object output;
 
         if (input instanceof Exception) {
             Exception e = (Exception) input;
-            output = "\n###########[ERROR IN STEM SYSTEM START]##############\n" + "Stacktrace:::" + getStackTrace(e) + "###########[ERROR IN STEM SYSTEM END]##############";
+            List<String> exceptionList = new ArrayList<>();
+            exceptionList.add("");
+            exceptionList.add("###########[ERROR IN STEM SYSTEM START]##############");
+            exceptionList.addAll(getStackTrace(e));
+            exceptionList.add("###########[ERROR IN STEM SYSTEM END]##############");
+            output = exceptionList;
         } else {
-            output = input.toString();
+            output = input;
         }
 
         return output;
     }
 
-    private void log(String msg, Level level) {
-        this.logSystem.logToSysLogger(level, msg);
+    private void log(Object msg, Level level) {
+        if (msg instanceof List) {
+            List<String> list = (List<String>) msg;
+            for (String entry : list) {
+                this.logSystem.logToSysLogger(level, entry);
+            }
+        } else {
+            this.logSystem.logToSysLogger(level, msg.toString());
+        }
     }
 
     void addToLogList(LogRecord logRecord) {
