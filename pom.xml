@@ -28,8 +28,8 @@
             <url>http://www.mvnrepository.com</url>
         </repository>
         <repository>
-            <id>enigmar-repo</id>
-            <url>https://repository.enigmar.de/</url>
+            <id>MirraNET Builds Repository</id>
+            <url>https://builds.mirranet.de/plugin/repository/everything/</url>
         </repository>
     </repositories>
 
