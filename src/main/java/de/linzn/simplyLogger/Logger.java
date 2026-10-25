@@ -16,26 +16,70 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+/**
+ * Logger facade of the log system.
+ * <p>
+ * All caches are bounded: the log entry cache keeps the last {@code maxCacheLog} records and the
+ * exception history keeps the last {@link #MAX_EXCEPTIONS} exceptions. Messages below the active log
+ * level are dropped before any formatting work is done.
+ */
 public class Logger {
+    /* Maximum number of exceptions kept in the exception history */
+    public static final int MAX_EXCEPTIONS = 100;
+    /* Maximum depth of "Caused by" chains rendered for one exception */
+    private static final int MAX_CAUSE_DEPTH = 10;
+
     private final LogSystem logSystem;
     private final int maxCacheLog;
-    private final LinkedList<LogRecord> logEntries = new LinkedList<>();
-    private final LinkedHashMap<Long, Exception> exceptionList = new LinkedHashMap<>();
-
+    /* Guarded by logEntries */
+    private final ArrayDeque<LogRecord> logEntries = new ArrayDeque<>();
+    /* Guarded by exceptionList */
+    private final LinkedHashMap<Long, Exception> exceptionList = new LinkedHashMap<>(16, 0.75f, false) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Long, Exception> eldest) {
+            return size() > MAX_EXCEPTIONS;
+        }
+    };
+    /* Guarded by exceptionList; makes exception keys unique even within the same millisecond */
+    private long lastExceptionKey = 0;
+    /* Keeps the lines of one log call (e.g. a stack trace) together */
+    private final Object outputLock = new Object();
 
     Logger(LogSystem logSystem, int maxCacheLog) {
         this.logSystem = logSystem;
-        this.maxCacheLog = maxCacheLog;
+        this.maxCacheLog = Math.max(1, maxCacheLog);
     }
 
+    private static List<String> getStackTrace(Throwable ex) {
+        List<String> exceptionList = new ArrayList<>();
+        exceptionList.add("Stacktrace:::" + ex.getClass().getName() + ": " + ex.getMessage());
+        appendFrames(exceptionList, ex);
+        Throwable cause = ex.getCause();
+        Set<Throwable> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        seen.add(ex);
+        int depth = 0;
+        while (cause != null && depth < MAX_CAUSE_DEPTH && seen.add(cause)) {
+            exceptionList.add("Caused by: " + cause.getClass().getName() + ": " + cause.getMessage());
+            appendFrames(exceptionList, cause);
+            cause = cause.getCause();
+            depth++;
+        }
+        return exceptionList;
+    }
+
+    private static void appendFrames(List<String> lines, Throwable throwable) {
+        for (StackTraceElement element : throwable.getStackTrace()) {
+            lines.add("\t at " + element);
+        }
+    }
 
     /**
      * CONFIG Logging for config settings.
      *
      * @param msg Log entry
      */
-    public synchronized void CONFIG(Object msg) {
-        this.log(processLogInput(msg), Level.CONFIG);
+    public void CONFIG(Object msg) {
+        this.log(msg, Level.CONFIG);
     }
 
     /**
@@ -43,8 +87,8 @@ public class Logger {
      *
      * @param msg Log entry
      */
-    public synchronized void LIVE(Object msg) {
-        this.log(processLogInput(msg), Level.INFO);
+    public void LIVE(Object msg) {
+        this.log(msg, Level.INFO);
     }
 
     /**
@@ -52,8 +96,8 @@ public class Logger {
      *
      * @param msg Log entry
      */
-    public synchronized void DEBUG(Object msg) {
-        this.log(processLogInput(msg), CustomLevel.DEBUG);
+    public void DEBUG(Object msg) {
+        this.log(msg, CustomLevel.DEBUG);
     }
 
     /**
@@ -61,8 +105,8 @@ public class Logger {
      *
      * @param msg Log entry
      */
-    public synchronized void INFO(Object msg) {
-        this.log(processLogInput(msg), Level.INFO);
+    public void INFO(Object msg) {
+        this.log(msg, Level.INFO);
     }
 
     /**
@@ -70,8 +114,8 @@ public class Logger {
      *
      * @param msg Log entry
      */
-    public synchronized void WARNING(Object msg) {
-        this.log(processLogInput(msg), Level.WARNING);
+    public void WARNING(Object msg) {
+        this.log(msg, Level.WARNING);
     }
 
     /**
@@ -79,8 +123,8 @@ public class Logger {
      *
      * @param msg Log entry
      */
-    public synchronized void ERROR(Object msg) {
-        this.log(processLogInput(msg), Level.SEVERE);
+    public void ERROR(Object msg) {
+        this.log(msg, Level.SEVERE);
     }
 
     /**
@@ -88,8 +132,8 @@ public class Logger {
      *
      * @param msg Log entry
      */
-    public synchronized void CORE(Object msg) {
-        this.log(processLogInput(msg), CustomLevel.CORE);
+    public void CORE(Object msg) {
+        this.log(msg, CustomLevel.CORE);
     }
 
     /**
@@ -97,8 +141,8 @@ public class Logger {
      *
      * @param msg Log entry
      */
-    public synchronized void SUPER(Object msg) {
-        this.log(processLogInput(msg), CustomLevel.SUPER);
+    public void SUPER(Object msg) {
+        this.log(msg, CustomLevel.SUPER);
     }
 
     /**
@@ -107,93 +151,84 @@ public class Logger {
      * @param msg   Log entry
      * @param level Log level to log
      */
-    public synchronized void LOG(Object msg, Level level) {
-        this.log(processLogInput(msg), level);
+    public void LOG(Object msg, Level level) {
+        this.log(msg, level == null ? Level.INFO : level);
     }
 
-
     /**
-     * Get a String list with the last x log entries
+     * Get a list with the last x log entries
      *
      * @param max Amount of logentries to collect
-     * @return String list with log entries
+     * @return copy of the requested log entries, oldest first
      */
     public List<LogRecord> getLastEntries(int max) {
-        return splitLogList(max);
+        synchronized (this.logEntries) {
+            List<LogRecord> all = new ArrayList<>(this.logEntries);
+            if (max >= all.size()) {
+                return all;
+            }
+            if (max <= 0) {
+                return new ArrayList<>();
+            }
+            return new ArrayList<>(all.subList(all.size() - max, all.size()));
+        }
     }
-
 
     /**
-     * Get all exceptions since startup
+     * Get the most recent exceptions (at most {@link #MAX_EXCEPTIONS})
      *
-     * @return LinkedHashMap with all exceptions
+     * @return copy of the exception history, keyed by timestamp in milliseconds
      */
     public LinkedHashMap<Long, Exception> getExceptionList() {
-        return this.exceptionList;
+        synchronized (this.exceptionList) {
+            return new LinkedHashMap<>(this.exceptionList);
+        }
     }
 
-
-    private Object processLogInput(Object input) {
-        Object output;
-
-        if (input instanceof Exception) {
-            Exception e = (Exception) input;
-            this.exceptionList.put(new Date().getTime(), e);
-            List<String> exceptionList = new ArrayList<>();
-            exceptionList.add("");
-            exceptionList.add("###########[ERROR IN STEM SYSTEM START]##############");
-            exceptionList.addAll(getStackTrace(e));
-            exceptionList.add("###########[ERROR IN STEM SYSTEM END]##############");
-            output = exceptionList;
-        } else {
-            output = input;
+    private void rememberException(Exception e) {
+        synchronized (this.exceptionList) {
+            long key = Math.max(System.currentTimeMillis(), this.lastExceptionKey + 1);
+            this.lastExceptionKey = key;
+            this.exceptionList.put(key, e);
         }
-
-        return output;
-    }
-
-    private static List<String> getStackTrace(Exception ex) {
-        List<String> exceptionList = new ArrayList<>();
-        StackTraceElement[] st = ex.getStackTrace();
-        exceptionList.add("Stacktrace:::" + ex.getClass().getName() + ": " + ex.getMessage() + "");
-        for (int i = 0; i < st.length; i++) {
-            exceptionList.add("\t at " + st[i].toString() + "");
-        }
-        return exceptionList;
     }
 
     private void log(Object msg, Level level) {
-        if (msg instanceof List) {
-            List<String> list = (List<String>) msg;
-            for (String entry : list) {
-                this.logSystem.logToSysLogger(level, entry);
+        if (msg instanceof Exception exception) {
+            this.rememberException(exception);
+        }
+        if (!this.logSystem.isLoggable(level)) {
+            return;
+        }
+        if (msg instanceof Throwable throwable) {
+            List<String> lines = new ArrayList<>();
+            lines.add("");
+            lines.add("###########[ERROR IN STEM SYSTEM START]##############");
+            lines.addAll(getStackTrace(throwable));
+            lines.add("###########[ERROR IN STEM SYSTEM END]##############");
+            synchronized (this.outputLock) {
+                for (String entry : lines) {
+                    this.logSystem.logToSysLogger(level, entry);
+                }
+            }
+        } else if (msg instanceof List<?> list) {
+            synchronized (this.outputLock) {
+                for (Object entry : list) {
+                    this.logSystem.logToSysLogger(level, String.valueOf(entry));
+                }
             }
         } else {
-            this.logSystem.logToSysLogger(level, msg.toString());
+            this.logSystem.logToSysLogger(level, String.valueOf(msg));
         }
     }
 
     void addToLogList(LogRecord logRecord) {
-        if (logEntries.size() >= maxCacheLog) {
-            logEntries.removeFirst();
+        synchronized (this.logEntries) {
+            if (this.logEntries.size() >= this.maxCacheLog) {
+                this.logEntries.removeFirst();
+            }
+            this.logEntries.addLast(logRecord);
         }
-        logEntries.addLast(logRecord);
-    }
-
-    /**
-     * Split the current log entry list to a smaller one
-     *
-     * @param max max size of requested logentries
-     * @return LinkedList of requested logentries
-     */
-    private List<LogRecord> splitLogList(int max) {
-        List<LogRecord> clonedRecords;
-        if (logEntries.size() <= max) {
-            clonedRecords = new LinkedList<>(logEntries);
-        } else {
-            clonedRecords = logEntries.subList(logEntries.size() - max, logEntries.size());
-        }
-        return clonedRecords;
     }
 
     /**

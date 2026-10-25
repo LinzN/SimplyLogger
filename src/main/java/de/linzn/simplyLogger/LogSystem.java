@@ -17,12 +17,16 @@ import de.linzn.simplyLogger.input.InputHandler;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Optional;
 import java.util.logging.*;
 
 public class LogSystem {
+    /* Maximum size of one log file before it is rotated */
+    private static final int MAX_FILE_BYTES = 50 * 1024 * 1024;
+    /* Maximum number of rotated log files per run */
+    private static final int MAX_FILE_COUNT = 10;
 
     final DefaultFormatter defaultFormatter;
     final ColorFormatter colorFormatter;
@@ -103,7 +107,7 @@ public class LogSystem {
      *
      * @param inputHandler InputHandler implementation for console input
      */
-    public void registerInputHandler(InputHandler inputHandler) {
+    public synchronized void registerInputHandler(InputHandler inputHandler) {
         if (this.inputManager == null) {
             this.logger.INFO("Register a new input manager!");
             this.inputManager = new InputManager(inputHandler, this);
@@ -115,7 +119,7 @@ public class LogSystem {
     /**
      * Unregister and disable console inputs
      */
-    public void unregisterInputHandler() {
+    public synchronized void unregisterInputHandler() {
         if (this.inputManager != null) {
             this.logger.INFO("Unregister input manager!");
             this.inputManager.stopThread();
@@ -131,6 +135,16 @@ public class LogSystem {
      * @param level Level of logging
      * @param msg   Content of logging
      */
+    /**
+     * Check if a message with this level would be logged
+     *
+     * @param level level to check
+     * @return true if the level is enabled
+     */
+    public boolean isLoggable(Level level) {
+        return this.sysLogger != null && this.sysLogger.isLoggable(level);
+    }
+
     void logToSysLogger(Level level, String msg) {
         if (this.sysLogger != null) {
             this.sysLogger.log(level, msg);
@@ -145,22 +159,27 @@ public class LogSystem {
         sysLogger.addHandler(consoleHandler);
     }
 
-    private void setupSysFileLogger() {
-
+    private synchronized void setupSysFileLogger() {
         try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy-HH.mm.ss");
-            if (!logDirectory.exists()) {
-                logDirectory.mkdir();
+            if (!logDirectory.exists() && !logDirectory.mkdirs()) {
+                this.logger.ERROR("Could not create log directory " + logDirectory.getAbsolutePath());
+                return;
             }
-
-            fileHandler = new FileHandler(logDirectory.getName() + "/" + dateFormat.format(new Date().getTime()) + ".log");
+            if (this.fileHandler != null) {
+                sysLogger.removeHandler(this.fileHandler);
+                this.fileHandler.close();
+            }
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy-HH.mm.ss");
+            /* Rotate inside one run: at most MAX_FILE_COUNT files of MAX_FILE_BYTES each */
+            String pattern = new File(logDirectory, dateFormat.format(new Date()) + "_%g.log").getPath();
+            fileHandler = new FileHandler(pattern, MAX_FILE_BYTES, MAX_FILE_COUNT, true);
+            fileHandler.setEncoding(StandardCharsets.UTF_8.name());
             fileHandler.setFormatter(defaultFormatter);
             sysLogger.addHandler(fileHandler);
         } catch (SecurityException | IOException e) {
             this.logger.ERROR(e);
         }
     }
-
 
     static class DefaultFormatter extends SimpleFormatter {
         private static final String format = "[%1$tF %1$tT] [%2$-7s] [%3$s] %4$s %n";
@@ -170,20 +189,23 @@ public class LogSystem {
             return String.format(format,
                     new Date(lr.getMillis()),
                     lr.getLevel().getLocalizedName(),
-                    getThreadName(lr.getThreadID()),
+                    getThreadName(lr.getLongThreadID()),
                     lr.getMessage()
             );
         }
 
+        /**
+         * Resolve the thread name of a log record. Handlers format synchronously on the logging thread,
+         * so the current thread is the source. This avoids Thread.getAllStackTraces(), which stops all
+         * threads and is extremely expensive when called for every log line.
+         */
         String getThreadName(long threadId) {
-            Optional<Thread> thread = Thread.getAllStackTraces().keySet().stream()
-                    .filter(t -> t.getId() == threadId)
-                    .findFirst();
-            if (thread.isPresent()) {
-                return thread.get().getName();
-            } else {
-                return "UNKNOWN";
+            Thread current = Thread.currentThread();
+            if (current.threadId() == threadId) {
+                String name = current.getName();
+                return name.isEmpty() ? (current.isVirtual() ? "virtual-" + threadId : "thread-" + threadId) : name;
             }
+            return "thread-" + threadId;
         }
     }
 
